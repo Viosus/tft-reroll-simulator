@@ -101,7 +101,7 @@ for i in range(num_targets):
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
 
 if st.button("开始模拟"):
-    results = [simulate_to_targets(level, df, targets) for _ in range(runs)]
+    results = [simulate_to_targets(level, df, targets, custom_pool_counts) for _ in range(runs)]
     st.write(f"平均花费金币：{sum(results) / len(results):.2f}")
 
     fig, ax = plt.subplots()
