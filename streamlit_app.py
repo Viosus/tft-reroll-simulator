@@ -65,7 +65,13 @@ def simulate_to_targets(level, df, target_dict, custom_pool_counts=None):
     return rolls * 2
 
 
-# 初始化 session_state 历史记录容器
+
+# 初始化 session_state 容器
+if "history" not in st.session_state:
+    st.session_state["history"] = []
+if "deleted_rows" not in st.session_state:
+    st.session_state["deleted_rows"] = set()
+
 if "history" not in st.session_state:
     st.session_state["history"] = []
 
@@ -81,7 +87,7 @@ level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
 
 num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=2)
 targets = {}
-deleted_rows = st.session_state.get("deleted_rows", set())
+deleted_rows = st.session_state["deleted_rows"]
 custom_pool_counts = {}
 
 
