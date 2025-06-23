@@ -65,12 +65,19 @@ for idx, row in enumerate(st.session_state["target_rows"]):
     custom_pool_counts[name] = remaining
 
 
+
 # 💠 每费用卡池卡牌总数调整（不影响目标卡）
 with st.expander("⚙️ 费用位卡池总数调整（假设其他玩家已拿走）"):
     cost_taken_adjust = {}
     for cost in range(1, 6):
-        cost_taken_adjust[cost] = st.number_input(f"{cost}费减少张数", min_value=0, max_value=CARD_QUANTITIES[cost] * 13, value=0, step=1, key=f"cost_adj_{cost}")
+        key = f"cost_adj_{cost}"
+        prev_val = st.session_state.get(key, 0)
+        new_val = st.number_input(f"{cost}费减少张数", min_value=0, max_value=CARD_QUANTITIES[cost] * 13, value=prev_val, step=1, key=key)
+        cost_taken_adjust[cost] = new_val
+        if new_val != prev_val:
+            st.session_state["custom_taken_cards"] = {}  # 强制功能2重建
 else_removed_card_info = cost_taken_adjust
+
 
 
 
