@@ -68,7 +68,7 @@ def simulate_to_targets(level, df, target_dict):
 # --- Streamlit 界面 ---
 st.title("云顶之弈 D 卡模拟器")
 
-df = pd.read_csv(r"C:\Users\Hanwen Li\Desktop\云顶剪辑\如何成为云顶大师第一集\tft14_champions_cleaned.csv")
+df = pd.read_csv("tft14_champions_cleaned.csv")
 champion_names = sorted(df[~df["name"].isin(EXCLUDED_UNITS)]["name"].unique())
 
 level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
