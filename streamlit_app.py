@@ -81,9 +81,14 @@ level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
 
 num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=2)
 targets = {}
+deleted_rows = st.session_state.get("deleted_rows", set())
 custom_pool_counts = {}
 
+
 for i in range(num_targets):
+    if i in deleted_rows:
+        continue
+
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         name = st.selectbox(f"第 {i+1} 张卡", champion_names, key=f"name_{i}")
@@ -95,6 +100,10 @@ for i in range(num_targets):
         remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=default_max, key=f"remain_{i}")
     targets[name] = count
     custom_pool_counts[name] = remaining
+    if st.button("🗑️ 删除", key=f"delete_{i}"):
+        deleted_rows.add(i)
+        st.session_state["deleted_rows"] = deleted_rows
+        st.experimental_rerun()
 
 
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
@@ -119,7 +128,14 @@ with st.expander("📦 当前卡池状态"):
 
 if st.button("开始模拟"):
     results = [simulate_to_targets(level, df, targets, custom_pool_counts) for _ in range(runs)]
-    st.write(f"平均花费金币：{sum(results) / len(results):.2f}")
+
+    avg_d_gold = sum(results) / len(results)
+    buy_gold = sum([df[df["name"] == name]["cost"].values[0] * count for name, count in targets.items()])
+    total_gold = avg_d_gold + buy_gold
+    st.write(f"平均刷新花费：{avg_d_gold:.2f} 金币")
+    st.write(f"购买卡牌花费：{buy_gold} 金币")
+    st.success(f"💰 平均总花费：{total_gold:.2f} 金币")
+
 
     fig, ax = plt.subplots()
     ax.hist(results, bins=20, edgecolor='black')
