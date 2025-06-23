@@ -75,6 +75,7 @@ else_removed_card_info = cost_taken_adjust
 
 
 
+
 # 💠 精细设定被其他玩家拿走的特定卡牌（不会作为目标卡）
 if "custom_taken_cards" not in st.session_state:
     st.session_state["custom_taken_cards"] = {}
@@ -86,24 +87,19 @@ with st.expander("🧩 指定被拿走的非目标卡"):
         sub_df = df[(df["cost"] == cost) & (~df["name"].isin(EXCLUDED_UNITS))]
         non_target_cards = [n for n in sub_df["name"] if n not in custom_pool_counts]
         total_to_remove = cost_taken_adjust.get(cost, 0)
-        default_each = total_to_remove // max(1, len(non_target_cards)) if non_target_cards else 0
-        remaining = total_to_remove
+
+        # === 正确分配：总数 = total_to_remove ===
+        base = total_to_remove // max(1, len(non_target_cards))
+        extra = total_to_remove % max(1, len(non_target_cards))
+        distribution = {}
+        for i, name in enumerate(non_target_cards):
+            distribution[name] = base + (1 if i < extra else 0)
+            distribution[name] = min(distribution[name], CARD_QUANTITIES[cost])  # 不超过最大值
 
         for name in non_target_cards:
             key = f"custom_taken_{name}"
-
             if key not in st.session_state["custom_taken_cards"]:
-                # 初始化默认值：均匀分配并尽量不超总量
-                suggested = min(default_each, CARD_QUANTITIES[cost])
-                st.session_state["custom_taken_cards"][key] = suggested
-                remaining -= suggested
-
-        # 补足剩余（前几个加1）
-        for name in non_target_cards:
-            key = f"custom_taken_{name}"
-            if remaining > 0 and st.session_state["custom_taken_cards"][key] < CARD_QUANTITIES[cost]:
-                st.session_state["custom_taken_cards"][key] += 1
-                remaining -= 1
+                st.session_state["custom_taken_cards"][key] = distribution[name]
 
         for name in non_target_cards:
             key = f"custom_taken_{name}"
@@ -119,6 +115,7 @@ with st.expander("🧩 指定被拿走的非目标卡"):
             st.session_state["custom_taken_cards"][key] = new_val
 
 else_taken_named_card_info = custom_taken_cards
+
 
 
 
