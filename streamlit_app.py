@@ -78,14 +78,17 @@ if "history" not in st.session_state:
 # --- Streamlit 网页 ---
 
 st.title("云顶之弈 D 卡模拟器")
-st.caption("版本号：v1.3 - 修复权重概率与空格逻辑")
+st.caption("版本号：v1.7")
 
 df = pd.read_csv("tft14_champions_cleaned.csv")
 champion_names = sorted(df[~df["name"].isin(EXCLUDED_UNITS)]["name"].unique())
 
 level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
 
-num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=2)
+
+num_targets = st.session_state.get("num_targets", 2)
+num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=num_targets, key="num_targets")
+
 targets = {}
 deleted_rows = st.session_state["deleted_rows"]
 custom_pool_counts = {}
@@ -106,10 +109,16 @@ for i in range(num_targets):
         remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=default_max, key=f"remain_{i}")
     targets[name] = count
     custom_pool_counts[name] = remaining
+
     if st.button("🗑️ 删除", key=f"delete_{i}"):
         deleted_rows.add(i)
         st.session_state["deleted_rows"] = deleted_rows
+        st.session_state["num_targets"] = st.session_state.get("num_targets", num_targets) - 1
         st.rerun()
+
+        deleted_rows.add(i)
+        st.session_state["deleted_rows"] = deleted_rows
+        st.experimental_rerun()
 
 
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
