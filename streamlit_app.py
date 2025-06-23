@@ -73,20 +73,22 @@ with st.expander("⚙️ 费用位卡池总数调整（假设其他玩家已拿�
 else_removed_card_info = cost_taken_adjust
 
 
+
 # 💠 精细设定被其他玩家拿走的特定卡牌（不会作为目标卡）
 with st.expander("🧩 指定被拿走的非目标卡"):
     custom_taken_cards = {}
     for cost in range(1, 6):
         st.markdown(f"**{cost}费卡牌**")
         sub_df = df[(df["cost"] == cost) & (~df["name"].isin(EXCLUDED_UNITS))]
-        for _, row in sub_df.iterrows():
-            name = row["name"]
-            if name in custom_pool_counts:  # 不覆盖目标卡
-                continue
-            taken = st.number_input(f"{name} 被拿走数量", min_value=0, max_value=CARD_QUANTITIES[cost], value=0, step=1, key=f"custom_taken_{name}")
+        non_target_cards = [n for n in sub_df["name"] if n not in custom_pool_counts]
+        default_each = cost_taken_adjust.get(cost, 0) // max(1, len(non_target_cards))
+        for name in non_target_cards:
+            key = f"custom_taken_{name}"
+            taken = st.number_input(f"{name} 被拿走数量", min_value=0, max_value=CARD_QUANTITIES[cost], value=default_each, step=1, key=key)
             if taken > 0:
                 custom_taken_cards[name] = taken
 else_taken_named_card_info = custom_taken_cards
+
 
 
 
@@ -126,6 +128,15 @@ for cost in range(1, 6):
                 if removed <= 0:
                     break
 # 汇总当前卡池信息
+# 汇总当前卡池信息
+current_pool = {cost: sum(pool[cost].values()) for cost in pool}
+total_cards = sum(current_pool.values())
+
+with st.expander("📦 当前卡池状态"):
+    st.write(f"总卡数：{total_cards}")
+    for cost in sorted(current_pool.keys()):
+        st.write(f"{cost}费：{current_pool[cost]} 张")
+
 for cost in sorted(pool.keys()):
     current_pool[cost] = sum(pool[cost].values())
     total_cards += current_pool[cost]
