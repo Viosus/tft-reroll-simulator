@@ -73,22 +73,63 @@ with st.expander("⚙️ 费用位卡池总数调整（假设其他玩家已拿�
 else_removed_card_info = cost_taken_adjust
 
 
+# 💠 精细设定被其他玩家拿走的特定卡牌（不会作为目标卡）
+with st.expander("🧩 指定被拿走的非目标卡"):
+    custom_taken_cards = {}
+    for cost in range(1, 6):
+        st.markdown(f"**{cost}费卡牌**")
+        sub_df = df[(df["cost"] == cost) & (~df["name"].isin(EXCLUDED_UNITS))]
+        for _, row in sub_df.iterrows():
+            name = row["name"]
+            if name in custom_pool_counts:  # 不覆盖目标卡
+                continue
+            taken = st.number_input(f"{name} 被拿走数量", min_value=0, max_value=CARD_QUANTITIES[cost], value=0, step=1, key=f"custom_taken_{name}")
+            if taken > 0:
+                custom_taken_cards[name] = taken
+else_taken_named_card_info = custom_taken_cards
+
+
+
+
+
 # 当前卡池状态展示
 current_pool = {cost: 0 for cost in CARD_QUANTITIES}
 total_cards = 0
+pool = {cost: {} for cost in CARD_QUANTITIES}
+
+# 构建卡池，考虑费用位减少设定（功能1）和目标卡保护
+# 构建卡池，考虑功能1和功能2：费用位减少 + 精细移除非目标卡
 for _, row in df.iterrows():
     name = row["name"]
     cost = row["cost"]
     if name in EXCLUDED_UNITS:
         continue
-    qty = custom_pool_counts.get(name, CARD_QUANTITIES[cost])
-    current_pool[cost] += qty
-    total_cards += qty
+    is_target = name in custom_pool_counts
+    if is_target:
+        qty = custom_pool_counts[name]
+    else:
+        qty = CARD_QUANTITIES[cost]
+    if name in else_taken_named_card_info:
+        qty -= else_taken_named_card_info[name]
+        qty = max(0, qty)
+    pool[cost][name] = qty
 
-with st.expander("📦 当前卡池状态"):
-    st.write(f"总卡数：{total_cards}")
-    for cost in sorted(current_pool.keys()):
-        st.write(f"{cost}费：{current_pool[cost]} 张")
+# 补足每费用被拿走的数量（扣除已被精细指定的）
+for cost in range(1, 6):
+    removed = cost_taken_adjust.get(cost, 0)
+    non_target_units = [n for n in pool[cost] if n not in custom_pool_counts and n not in else_taken_named_card_info]
+    while removed > 0 and non_target_units:
+        for unit in non_target_units:
+            if pool[cost][unit] > 0:
+                pool[cost][unit] -= 1
+                removed -= 1
+                if removed <= 0:
+                    break
+# 汇总当前卡池信息
+for cost in sorted(pool.keys()):
+    current_pool[cost] = sum(pool[cost].values())
+    total_cards += current_pool[cost]
+
 
 # 模拟核心逻辑
 def get_shop_odds(level):
