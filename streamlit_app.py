@@ -51,11 +51,10 @@ def simulate_to_targets(level, df, target_dict, custom_pool_counts=None):
         cost = row["cost"]
         if name in EXCLUDED_UNITS:
             continue
-        if name in target_dict:
-            if custom_pool_counts and name in custom_pool_counts:
-                pool[cost][name] = custom_pool_counts[name]
-            else:
-                pool[cost][name] = CARD_QUANTITIES[cost]
+        if custom_pool_counts and name in custom_pool_counts:
+            pool[cost][name] = custom_pool_counts[name]
+        else:
+            pool[cost][name] = CARD_QUANTITIES[cost]
     current_counts = {name: 0 for name in target_dict}
     rolls = 0
     while any(current_counts[name] < target_dict[name] for name in target_dict):
