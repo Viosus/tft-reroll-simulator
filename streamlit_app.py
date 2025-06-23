@@ -53,9 +53,18 @@ def roll_once_multi(level, pool, target_dict):
             hits[chosen_card] += 1
     return hits
 
-def simulate_to_targets(level, df, target_dict):
-    original_pool = initialize_card_pool(df)
-    pool = copy.deepcopy(original_pool)
+def simulate_to_targets(level, df, target_dict, custom_pool_counts):
+    pool = {cost: {} for cost in CARD_QUANTITIES}
+    for _, row in df.iterrows():
+        name = row["name"]
+        cost = row["cost"]
+        if name in EXCLUDED_UNITS:
+            continue
+        if name in target_dict:
+            if custom_pool_counts and name in custom_pool_counts:
+                pool[cost][name] = custom_pool_counts[name]
+            else:
+                pool[cost][name] = CARD_QUANTITIES[cost]
     current_counts = {name: 0 for name in target_dict}
     rolls = 0
     while any(current_counts[name] < target_dict[name] for name in target_dict):
@@ -73,15 +82,21 @@ champion_names = sorted(df[~df["name"].isin(EXCLUDED_UNITS)]["name"].unique())
 
 level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
 
+# Streamlit 表单修改：支持设置每张卡的剩余张数
 num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=2)
 targets = {}
+custom_pool_counts = {}
+
 for i in range(num_targets):
-    col1, col2 = st.columns([2, 1])
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
         name = st.selectbox(f"第 {i+1} 张卡", champion_names, key=f"name_{i}")
     with col2:
-        count = st.number_input(f"需要张数", min_value=1, max_value=9, value=3, key=f"count_{i}")
+        count = st.number_input(f"需求张数", min_value=1, max_value=9, value=3, key=f"count_{i}")
+    with col3:
+        remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=30, key=f"remain_{i}")
     targets[name] = count
+    custom_pool_counts[name] = remaining
 
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
 
@@ -91,7 +106,7 @@ if st.button("开始模拟"):
 
     fig, ax = plt.subplots()
     ax.hist(results, bins=20, edgecolor='black')
-    ax.set_title("金币消耗分布")
-    ax.set_xlabel("金币")
-    ax.set_ylabel("次数")
+    ax.set_title("Distribution of Gold Spent")
+    ax.set_xlabel("Gold")
+    ax.set_ylabel("Simulation")
     st.pyplot(fig)
