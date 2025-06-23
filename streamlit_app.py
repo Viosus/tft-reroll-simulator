@@ -64,7 +64,13 @@ def simulate_to_targets(level, df, target_dict, custom_pool_counts=None):
         rolls += 1
     return rolls * 2
 
+
+# 初始化 session_state 历史记录容器
+if "history" not in st.session_state:
+    st.session_state["history"] = []
+
 # --- Streamlit 网页 ---
+
 st.title("云顶之弈 D 卡模拟器")
 st.caption("版本号：v1.3 - 修复权重概率与空格逻辑")
 
@@ -90,7 +96,26 @@ for i in range(num_targets):
     targets[name] = count
     custom_pool_counts[name] = remaining
 
+
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
+
+# ==== 实时显示当前卡池状态 ====
+current_pool = {cost: 0 for cost in CARD_QUANTITIES}
+total_cards = 0
+for _, row in df.iterrows():
+    name = row["name"]
+    cost = row["cost"]
+    if name in EXCLUDED_UNITS:
+        continue
+    qty = custom_pool_counts.get(name, CARD_QUANTITIES[cost])
+    current_pool[cost] += qty
+    total_cards += qty
+
+with st.expander("📦 当前卡池状态"):
+    st.write(f"总卡数：{total_cards}")
+    for cost in sorted(current_pool.keys()):
+        st.write(f"{cost}费：{current_pool[cost]} 张")
+
 
 if st.button("开始模拟"):
     results = [simulate_to_targets(level, df, targets, custom_pool_counts) for _ in range(runs)]
@@ -101,4 +126,19 @@ if st.button("开始模拟"):
     ax.set_title("Distribution of Gold Spent")
     ax.set_xlabel("Gold")
     ax.set_ylabel("Simulation")
+
     st.pyplot(fig)
+
+    # === 保存历史记录 ===
+    st.session_state["history"].append({
+        "等级": level,
+        "目标卡": targets,
+        "模拟次数": runs,
+        "平均金币": round(sum(results) / len(results), 2)
+    })
+
+    # 展示历史记录
+    with st.expander("🕓 历史模拟记录"):
+        for i, entry in enumerate(st.session_state["history"][::-1], 1):
+            st.markdown(f"**#{i} 等级 {entry['等级']}** ｜ 目标卡：{entry['目标卡']} ｜ {entry['模拟次数']} 次 ｜ 平均金币：{entry['平均金币']}")
+
