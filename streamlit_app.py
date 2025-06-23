@@ -53,7 +53,7 @@ def roll_once_multi(level, pool, target_dict):
             hits[chosen_card] += 1
     return hits
 
-def simulate_to_targets(level, df, target_dict, custom_pool_counts):
+def simulate_to_targets(level, df, target, custom_pool_counts):
     pool = {cost: {} for cost in CARD_QUANTITIES}
     for _, row in df.iterrows():
         name = row["name"]
