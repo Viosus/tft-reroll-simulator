@@ -109,7 +109,7 @@ for i in range(num_targets):
     if st.button("🗑️ 删除", key=f"delete_{i}"):
         deleted_rows.add(i)
         st.session_state["deleted_rows"] = deleted_rows
-        st.experimental_rerun()
+        st.rerun()
 
 
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
