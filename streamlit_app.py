@@ -2,23 +2,11 @@
 import streamlit as st
 import pandas as pd
 import random
-import copy
 import matplotlib.pyplot as plt
 
 # 卡池设定
 CARD_QUANTITIES = {1: 30, 2: 25, 3: 18, 4: 10, 5: 9}
 EXCLUDED_UNITS = {"T-43X", "R-080T"}
-
-def initialize_card_pool(df):
-    pool = {cost: {} for cost in CARD_QUANTITIES}
-    for _, row in df.iterrows():
-        name = row["name"]
-        cost = row["cost"]
-        if name in EXCLUDED_UNITS:
-            continue
-        if cost in CARD_QUANTITIES:
-            pool[cost][name] = CARD_QUANTITIES[cost]
-    return pool
 
 def get_shop_odds(level):
     SHOP_ODDS = {
@@ -39,21 +27,24 @@ def get_shop_odds(level):
 def roll_once_multi(level, pool, target_dict):
     odds = get_shop_odds(level)
     hits = {name: 0 for name in target_dict}
-    for _ in range(5):
-        costs = list(odds.keys())
-        probs = list(odds.values())
-        chosen_cost = random.choices(costs, weights=probs, k=1)[0]
-        available_cards = pool.get(chosen_cost, {})
-        remaining = {n: c for n, c in available_cards.items() if c > 0}
-        if not remaining:
-            continue
-        chosen_card = random.choice(list(remaining.keys()))
-        if chosen_card in target_dict:
-            pool[chosen_cost][chosen_card] -= 1
-            hits[chosen_card] += 1
+    for _ in range(5):  # 每格商店
+        for _ in range(10):  # 最多尝试 10 次找非空费用卡池
+            costs = list(odds.keys())
+            probs = list(odds.values())
+            chosen_cost = random.choices(costs, weights=probs, k=1)[0]
+            available_cards = pool.get(chosen_cost, {})
+            remaining = {n: c for n, c in available_cards.items() if c > 0}
+            if remaining:
+                cards = list(remaining.keys())
+                weights = list(remaining.values())
+                chosen_card = random.choices(cards, weights=weights, k=1)[0]
+                if chosen_card in target_dict:
+                    pool[chosen_cost][chosen_card] -= 1
+                    hits[chosen_card] += 1
+                break
     return hits
 
-def simulate_to_targets(level, df, targets, custom_pool_counts):
+def simulate_to_targets(level, df, target_dict, custom_pool_counts=None):
     pool = {cost: {} for cost in CARD_QUANTITIES}
     for _, row in df.iterrows():
         name = row["name"]
@@ -72,17 +63,17 @@ def simulate_to_targets(level, df, targets, custom_pool_counts):
         for name in hits:
             current_counts[name] += hits[name]
         rolls += 1
-    return rolls * 2  # 每次刷新消耗2金币
+    return rolls * 2
 
-# --- Streamlit 界面 ---
+# --- Streamlit 网页 ---
 st.title("云顶之弈 D 卡模拟器")
+st.caption("版本号：v1.3 - 修复权重概率与空格逻辑")
 
 df = pd.read_csv("tft14_champions_cleaned.csv")
 champion_names = sorted(df[~df["name"].isin(EXCLUDED_UNITS)]["name"].unique())
 
 level = st.slider("选择刷新等级", min_value=1, max_value=11, value=8)
 
-# Streamlit 表单修改：支持设置每张卡的剩余张数
 num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max_value=10, value=2)
 targets = {}
 custom_pool_counts = {}
@@ -94,7 +85,9 @@ for i in range(num_targets):
     with col2:
         count = st.number_input(f"需求张数", min_value=1, max_value=9, value=3, key=f"count_{i}")
     with col3:
-        remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=30, key=f"remain_{i}")
+        default_cost = int(df[df["name"] == name]["cost"].values[0])
+        default_max = CARD_QUANTITIES.get(default_cost, 30)
+        remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=default_max, key=f"remain_{i}")
     targets[name] = count
     custom_pool_counts[name] = remaining
 
