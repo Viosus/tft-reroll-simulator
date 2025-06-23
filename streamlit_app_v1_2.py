@@ -76,6 +76,7 @@ num_targets = st.number_input("需要模拟的目标卡数量", min_value=1, max
 targets = {}
 custom_pool_counts = {}
 
+# 在每次 selectbox 更新时，自动设置卡池数量为该卡对应费用的最大值
 for i in range(num_targets):
     col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
@@ -83,9 +84,13 @@ for i in range(num_targets):
     with col2:
         count = st.number_input(f"需求张数", min_value=1, max_value=9, value=3, key=f"count_{i}")
     with col3:
-        remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=30, key=f"remain_{i}")
+        # 根据卡名找到费用
+        default_remaining = int(df[df["name"] == name]["cost"].values[0])
+        default_max = CARD_QUANTITIES.get(default_remaining, 30)
+        remaining = st.number_input(f"卡池剩余", min_value=0, max_value=30, value=default_max, key=f"remain_{i}")
     targets[name] = count
     custom_pool_counts[name] = remaining
+
 
 runs = st.number_input("模拟次数", min_value=1, max_value=10000, value=1000)
 
