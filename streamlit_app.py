@@ -74,20 +74,52 @@ else_removed_card_info = cost_taken_adjust
 
 
 
+
 # 💠 精细设定被其他玩家拿走的特定卡牌（不会作为目标卡）
+if "custom_taken_cards" not in st.session_state:
+    st.session_state["custom_taken_cards"] = {}
+
 with st.expander("🧩 指定被拿走的非目标卡"):
     custom_taken_cards = {}
     for cost in range(1, 6):
         st.markdown(f"**{cost}费卡牌**")
         sub_df = df[(df["cost"] == cost) & (~df["name"].isin(EXCLUDED_UNITS))]
         non_target_cards = [n for n in sub_df["name"] if n not in custom_pool_counts]
-        default_each = cost_taken_adjust.get(cost, 0) // max(1, len(non_target_cards))
+        total_to_remove = cost_taken_adjust.get(cost, 0)
+        default_each = total_to_remove // max(1, len(non_target_cards)) if non_target_cards else 0
+        remaining = total_to_remove
+
         for name in non_target_cards:
             key = f"custom_taken_{name}"
-            taken = st.number_input(f"{name} 被拿走数量", min_value=0, max_value=CARD_QUANTITIES[cost], value=default_each, step=1, key=key)
-            if taken > 0:
-                custom_taken_cards[name] = taken
+
+            if key not in st.session_state["custom_taken_cards"]:
+                # 初始化默认值：均匀分配并尽量不超总量
+                suggested = min(default_each, CARD_QUANTITIES[cost])
+                st.session_state["custom_taken_cards"][key] = suggested
+                remaining -= suggested
+
+        # 补足剩余（前几个加1）
+        for name in non_target_cards:
+            key = f"custom_taken_{name}"
+            if remaining > 0 and st.session_state["custom_taken_cards"][key] < CARD_QUANTITIES[cost]:
+                st.session_state["custom_taken_cards"][key] += 1
+                remaining -= 1
+
+        for name in non_target_cards:
+            key = f"custom_taken_{name}"
+            new_val = st.number_input(
+                f"{name} 被拿走数量",
+                min_value=0,
+                max_value=CARD_QUANTITIES[cost],
+                value=st.session_state["custom_taken_cards"].get(key, 0),
+                step=1,
+                key=key
+            )
+            custom_taken_cards[name] = new_val
+            st.session_state["custom_taken_cards"][key] = new_val
+
 else_taken_named_card_info = custom_taken_cards
+
 
 
 
