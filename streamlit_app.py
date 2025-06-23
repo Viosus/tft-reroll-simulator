@@ -83,7 +83,7 @@ with st.expander("🧩 指定被拿走的非目标卡"):
         st.markdown(f"**{cost}费卡牌**")
         sub_df = df[(df["cost"] == cost) & (~df["name"].isin(EXCLUDED_UNITS))]
         non_target_cards = [n for n in sub_df["name"] if n not in custom_pool_counts]
-        total_to_remove = .get(cost, 0)
+        total_to_remove = 0
 
         # === 正确分配：总数 = total_to_remove ===
         base = total_to_remove // max(1, len(non_target_cards))
