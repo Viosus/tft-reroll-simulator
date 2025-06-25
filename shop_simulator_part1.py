@@ -113,7 +113,7 @@ current_odds = get_shop_odds(level)
 odds_text = "｜".join([f"{cost}费：{int(p*100)}%" for cost, p in current_odds.items()])
 st.info(odds_text)
 
-gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, value=st.session_state["gold"])
+gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, value=max(0, st.session_state["gold"]))
 st.session_state["gold"] = gold_input
 
 cols = st.columns([1, 1])
@@ -121,7 +121,7 @@ with cols[0]:
     if st.button("🔁 刷新商店（-2金币）", disabled=st.session_state["gold"] < 2):
         if not st.session_state["lock_shop"]:
             st.session_state["shop"] = roll_shop(st.session_state["pool"], level)
-        st.session_state["gold"] -= 2
+        st.session_state["gold"] = max(0, st.session_state["gold"] - 2)
 with cols[1]:
     st.toggle("🔒 锁定商店", key="lock_shop")
 
@@ -136,7 +136,7 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
         st.markdown(f"- **{name}**（{cost}费）")
     with cols[1]:
         if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost or name == "—"):
-            st.session_state["gold"] -= cost
+            st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
             st.session_state["bench"].append(name)
             st.session_state["pool"][cost][name] -= 1
             st.session_state["shop"][idx] = ("—", 0)
@@ -164,7 +164,7 @@ if st.session_state["bench"]:
                 # 获取原卡名（移除⭐）
                 base_name = unit.replace("⭐", "")
                 cost = int(df[df["name"] == base_name]["cost"].values[0])
-                st.session_state["gold"] += cost
+                st.session_state["gold"] = min(100, st.session_state["gold"] + cost)
                 if base_name in st.session_state["pool"][cost]:
                     st.session_state["pool"][cost][base_name] += 1
 else:
