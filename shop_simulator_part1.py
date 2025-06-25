@@ -135,12 +135,14 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
     with cols[0]:
         st.markdown(f"- **{name}**（{cost}费）")
     with cols[1]:
-        if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost or name == "—"):
-            st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
-            st.session_state["bench"].append(name)
-            st.session_state["pool"][cost][name] -= 1
-            st.session_state["shop"][idx] = ("—", 0)
-            st.session_state["bench"] = auto_upgrade(st.session_state["bench"])
+        if name == "—" or cost == 0:
+    continue  # 跳过空格点击
+if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
+    st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
+    st.session_state["bench"].append(name)
+    st.session_state["pool"][cost][name] -= 1
+    st.session_state["shop"][idx] = ("—", 0)
+    st.session_state["bench"] = auto_upgrade(st.session_state["bench"])
 
 # -----------------------
 # 手牌展示
