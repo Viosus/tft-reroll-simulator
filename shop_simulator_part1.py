@@ -104,7 +104,15 @@ def roll_shop(pool, level):
 # 控件 UI
 # -----------------------
 
+
 level = st.slider("当前等级", 1, 11, 8)
+
+# 显示当前等级下的刷新概率
+st.markdown("🎯 **当前刷新概率：**")
+current_odds = get_shop_odds(level)
+odds_text = "｜".join([f"{cost}费：{int(p*100)}%" for cost, p in current_odds.items()])
+st.info(odds_text)
+
 gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, value=st.session_state["gold"])
 st.session_state["gold"] = gold_input
 
@@ -138,8 +146,27 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
 # 手牌展示
 # -----------------------
 
+
 st.subheader("🎒 手牌区（Bench）")
 if st.session_state["bench"]:
-    st.write(", ".join(st.session_state["bench"]))
+    bench_counts = {}
+    for unit in st.session_state["bench"]:
+        bench_counts[unit] = bench_counts.get(unit, 0) + 1
+
+    for idx, (unit, count) in enumerate(bench_counts.items()):
+        cols = st.columns([4, 1, 1])
+        with cols[0]:
+            st.markdown(f"**{unit}** ×{count}")
+        with cols[1]:
+            if st.button("出售", key=f"sell_{idx}"):
+                # 卖掉 bench 中一张该卡
+                st.session_state["bench"].remove(unit)
+                # 获取原卡名（移除⭐）
+                base_name = unit.replace("⭐", "")
+                cost = int(df[df["name"] == base_name]["cost"].values[0])
+                st.session_state["gold"] += cost
+                if base_name in st.session_state["pool"][cost]:
+                    st.session_state["pool"][cost][base_name] += 1
 else:
     st.write("（暂无）")
+
