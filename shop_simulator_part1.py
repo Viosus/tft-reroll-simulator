@@ -158,7 +158,8 @@ if st.session_state["bench"]:
             st.markdown(f"**{unit}**")
         with cols[1]:
             if st.button("出售", key=f"sell_{idx}"):
-                st.session_state["bench"].pop(idx)
+                if unit in st.session_state["bench"]:
+                st.session_state["bench"].remove(unit)
                 base_name = unit.split("⭐")[0]
                 cost = int(df[df["name"] == base_name]["cost"].values[0])
                 st.session_state["gold"] = min(100, st.session_state["gold"] + cost)
