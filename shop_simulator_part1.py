@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -9,11 +10,11 @@ import random
 CARD_QUANTITIES = {1: 30, 2: 25, 3: 18, 4: 10, 5: 9}
 EXCLUDED_UNITS = {"T-43X", "R-080T"}
 
-st.set_page_config(page_title="云顶商店模拟器", layout="centered")
-st.title("🧪 云顶之弈商店模拟器 - Part 1")
+st.set_page_config(page_title="云顶商店模拟器 - Part 2", layout="centered")
+st.title("💰 云顶之弈商店模拟器 - Part 2")
 
 # -----------------------
-# 加载棋子数据
+# 加载数据
 # -----------------------
 
 @st.cache_data
@@ -25,19 +26,28 @@ def load_data():
 df = load_data()
 
 # -----------------------
-# 构建卡池
+# 初始化状态
 # -----------------------
 
-def initialize_pool(df):
+if "pool" not in st.session_state:
     pool = {cost: {} for cost in CARD_QUANTITIES}
     for _, row in df.iterrows():
         name = row["name"]
         cost = row["cost"]
         pool[cost][name] = CARD_QUANTITIES[cost]
-    return pool
+    st.session_state["pool"] = pool
+
+if "gold" not in st.session_state:
+    st.session_state["gold"] = 10
+
+if "shop" not in st.session_state:
+    st.session_state["shop"] = []
+
+if "bench" not in st.session_state:
+    st.session_state["bench"] = []
 
 # -----------------------
-# 刷新逻辑
+# 概率与刷新逻辑
 # -----------------------
 
 def get_shop_odds(level):
@@ -72,18 +82,37 @@ def roll_shop(pool, level):
     return shop
 
 # -----------------------
-# Streamlit 界面
+# 控件 UI
 # -----------------------
 
 level = st.slider("当前等级", 1, 11, 8)
-if "pool" not in st.session_state:
-    st.session_state["pool"] = initialize_pool(df)
+st.write(f"💰 当前金币：**{st.session_state['gold']}**")
+if st.button("🔁 花2金币刷新商店", disabled=st.session_state["gold"] < 2):
+    st.session_state["gold"] -= 2
+    st.session_state["shop"] = roll_shop(st.session_state["pool"], level)
 
-if st.button("🎲 刷新商店"):
-    shop = roll_shop(st.session_state["pool"], level)
-    st.session_state["shop"] = shop
+# -----------------------
+# 商店展示与购买
+# -----------------------
 
-if "shop" in st.session_state:
-    st.subheader("📍 当前商店")
-    for name, cost in st.session_state["shop"]:
+st.subheader("🛒 当前商店")
+for idx, (name, cost) in enumerate(st.session_state["shop"]):
+    cols = st.columns([3, 1])
+    with cols[0]:
         st.markdown(f"- **{name}**（{cost}费）")
+    with cols[1]:
+        if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
+            st.session_state["gold"] -= cost
+            st.session_state["bench"].append(name)
+            st.session_state["pool"][cost][name] -= 1
+            st.session_state["shop"][idx] = ("—", 0)
+
+# -----------------------
+# 手牌展示
+# -----------------------
+
+st.subheader("🎒 手牌区（Bench）")
+if st.session_state["bench"]:
+    st.write(", ".join(st.session_state["bench"]))
+else:
+    st.write("（暂无）")
