@@ -105,7 +105,8 @@ def roll_shop(pool, level):
 # -----------------------
 
 level = st.slider("当前等级", 1, 11, 8)
-st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, key="gold")
+gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, value=st.session_state["gold"])
+st.session_state["gold"] = gold_input
 
 cols = st.columns([1, 1])
 with cols[0]:
