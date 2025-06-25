@@ -113,7 +113,7 @@ current_odds = get_shop_odds(level)
 odds_text = "｜".join([f"{cost}费：{int(p*100)}%" for cost, p in current_odds.items()])
 st.info(odds_text)
 
-gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, value=max(0, st.session_state["gold"]))
+gold_input = st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=10000, value=max(0, st.session_state["gold"]))
 st.session_state["gold"] = gold_input
 
 cols = st.columns([1, 1])
