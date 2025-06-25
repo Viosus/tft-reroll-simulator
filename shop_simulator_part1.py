@@ -2,6 +2,7 @@
 import streamlit as st
 import pandas as pd
 import random
+from collections import Counter
 
 # -----------------------
 # 基础配置
@@ -10,8 +11,8 @@ import random
 CARD_QUANTITIES = {1: 30, 2: 25, 3: 18, 4: 10, 5: 9}
 EXCLUDED_UNITS = {"T-43X", "R-080T"}
 
-st.set_page_config(page_title="云顶商店模拟器 - Part 2", layout="centered")
-st.title("💰 云顶之弈商店模拟器 - Part 2")
+st.set_page_config(page_title="云顶商店模拟器 - Part 3", layout="centered")
+st.title("🌟 云顶之弈商店模拟器 - Part 3")
 
 # -----------------------
 # 加载数据
@@ -45,6 +46,24 @@ if "shop" not in st.session_state:
 
 if "bench" not in st.session_state:
     st.session_state["bench"] = []
+
+if "lock_shop" not in st.session_state:
+    st.session_state["lock_shop"] = False
+
+# -----------------------
+# 升星逻辑
+# -----------------------
+
+def auto_upgrade(bench):
+    counts = Counter(bench)
+    for name, qty in counts.items():
+        while qty >= 3:
+            bench.remove(name)
+            bench.remove(name)
+            bench.remove(name)
+            bench.append(name + "⭐")
+            qty -= 3
+    return bench
 
 # -----------------------
 # 概率与刷新逻辑
@@ -86,10 +105,16 @@ def roll_shop(pool, level):
 # -----------------------
 
 level = st.slider("当前等级", 1, 11, 8)
-st.write(f"💰 当前金币：**{st.session_state['gold']}**")
-if st.button("🔁 花2金币刷新商店", disabled=st.session_state["gold"] < 2):
-    st.session_state["gold"] -= 2
-    st.session_state["shop"] = roll_shop(st.session_state["pool"], level)
+st.number_input("🧮 当前金币（可修改）", min_value=0, max_value=100, key="gold")
+
+cols = st.columns([1, 1])
+with cols[0]:
+    if st.button("🔁 刷新商店（-2金币）", disabled=st.session_state["gold"] < 2):
+        if not st.session_state["lock_shop"]:
+            st.session_state["shop"] = roll_shop(st.session_state["pool"], level)
+        st.session_state["gold"] -= 2
+with cols[1]:
+    st.toggle("🔒 锁定商店", key="lock_shop")
 
 # -----------------------
 # 商店展示与购买
@@ -101,11 +126,12 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
     with cols[0]:
         st.markdown(f"- **{name}**（{cost}费）")
     with cols[1]:
-        if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
+        if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost or name == "—"):
             st.session_state["gold"] -= cost
             st.session_state["bench"].append(name)
             st.session_state["pool"][cost][name] -= 1
             st.session_state["shop"][idx] = ("—", 0)
+            st.session_state["bench"] = auto_upgrade(st.session_state["bench"])
 
 # -----------------------
 # 手牌展示
