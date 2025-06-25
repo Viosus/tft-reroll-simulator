@@ -130,24 +130,22 @@ with cols[1]:
 # -----------------------
 
 st.subheader("🛒 当前商店")
+
 for idx, (name, cost) in enumerate(st.session_state["shop"]):
+    if name == "—" or cost == 0:
+        continue  # 跳过空格点击
+
     cols = st.columns([3, 1])
     with cols[0]:
         st.markdown(f"- **{name}**（{cost}费）")
     with cols[1]:
-        if name == "—" or cost == 0:
-            continue  # 跳过空格点击
-if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
-    st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
-    st.session_state["bench"].append(name)
-    st.session_state["pool"][cost][name] -= 1
-    st.session_state["shop"][idx] = ("—", 0)
-    st.session_state["bench"] = auto_upgrade(st.session_state["bench"])
-
-# -----------------------
-# 手牌展示
-# -----------------------
-
+        if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
+            st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
+            st.session_state["bench"].append(name)
+            st.session_state["pool"][cost][name] -= 1
+            st.session_state["shop"][idx] = ("—", 0)
+            st.session_state["bench"] = auto_upgrade(st.session_state["bench"])
+            st.rerun()
 
 
 st.subheader("🎒 手牌区（Bench）")
@@ -159,7 +157,7 @@ if st.session_state["bench"]:
         with cols[1]:
             if st.button("出售", key=f"sell_{idx}"):
                 if unit in st.session_state["bench"]:
-                    st.session_state["bench"].remove(unit)
+        st.session_state["bench"].remove(unit)
                 base_name = unit.split("⭐")[0]
                 cost = int(df[df["name"] == base_name]["cost"].values[0])
                 st.session_state["gold"] = min(100, st.session_state["gold"] + cost)
