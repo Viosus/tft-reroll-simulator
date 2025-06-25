@@ -136,7 +136,7 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
         st.markdown(f"- **{name}**（{cost}费）")
     with cols[1]:
         if name == "—" or cost == 0:
-    continue  # 跳过空格点击
+            continue  # 跳过空格点击
 if st.button(f"购买", key=f"buy_{idx}", disabled=st.session_state["gold"] < cost):
     st.session_state["gold"] = max(0, st.session_state["gold"] - cost)
     st.session_state["bench"].append(name)
