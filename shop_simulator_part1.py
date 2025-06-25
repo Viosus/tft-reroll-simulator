@@ -147,26 +147,23 @@ for idx, (name, cost) in enumerate(st.session_state["shop"]):
 # -----------------------
 
 
+
 st.subheader("🎒 手牌区（Bench）")
 if st.session_state["bench"]:
-    bench_counts = {}
-    for unit in st.session_state["bench"]:
-        bench_counts[unit] = bench_counts.get(unit, 0) + 1
-
-    for idx, (unit, count) in enumerate(bench_counts.items()):
-        cols = st.columns([4, 1, 1])
+    for idx, unit in enumerate(st.session_state["bench"]):
+        cols = st.columns([4, 1])
         with cols[0]:
-            st.markdown(f"**{unit}** ×{count}")
+            st.markdown(f"**{unit}**")
         with cols[1]:
             if st.button("出售", key=f"sell_{idx}"):
-                # 卖掉 bench 中一张该卡
-                st.session_state["bench"].remove(unit)
-                # 获取原卡名（移除⭐）
+                st.session_state["bench"].pop(idx)
                 base_name = unit.replace("⭐", "")
                 cost = int(df[df["name"] == base_name]["cost"].values[0])
                 st.session_state["gold"] = min(100, st.session_state["gold"] + cost)
                 if base_name in st.session_state["pool"][cost]:
                     st.session_state["pool"][cost][base_name] += 1
+                st.rerun()
 else:
     st.write("（暂无）")
+
 
